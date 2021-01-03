@@ -4,6 +4,7 @@ from redbot import __version__ as red_version
 from typing import Optional
 import discord
 import platform
+import socket
 import pip
 import sys
 import os
@@ -49,19 +50,25 @@ class DashboardSettingsMixin(MixinMeta):
         dbver = self.__version__
         ips = len(await self.config.secret()) == 32
 
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            in_use = s.connect_ex(('localhost', 42356)) == 0
         await message.edit(
             content=(
                 "Dashboard cog installation:\n"
                 + box(
                     "#Operating System\n"
-                    f"[Operating System]     {osver}\n"
-                    f"[Python Version]       {pyver}\n"
-                    f"[Pip Version]          {pipver}\n"
-                    f"[Red Version]          {redver}\n"
-                    f"[D.py Version]         {dpyver}\n"
-                    f"[Dashboard Version]    {dbver}\n"
+                    f"[Operating System]       {osver}\n"
+                    f"[Python Version]         {pyver}\n"
+                    f"[Pip Version]            {pipver}\n"
+                    f"[Red Version]            {redver}\n"
+                    f"[D.py Version]           {dpyver}\n"
+                    f"[Dashboard Version]      {dbver}\n"
                     "\n"
-                    f"[Verified secret]      {ips}\n",
+                    "#WS Configuration\n"
+                    f"[Verified secret]        {ips}\n"
+                    f"[RPC Enabled]            {self.bot.rpc_enabled}\n"
+                    f"[RPC Port]               {self.bot.rpc_port}\n"
+                    f"[Webserver Port Active]  {in_use}",
                     lang="css",
                 )
             )
@@ -168,8 +175,8 @@ class DashboardSettingsMixin(MixinMeta):
                 "```"
             )
 
-    @settings.command()
-    async def color(self, ctx, color: str):
+    @settings.command(name="color")
+    async def color_settings(self, ctx, color: str):
         """Set the default color for a new user.
 
         The webserver version must be at least 0.1.3a.dev in order for this to work."""
@@ -235,8 +242,8 @@ class DashboardSettingsMixin(MixinMeta):
             return await ctx.send("Meta description reset to default.")
         await ctx.tick()
 
-    @meta.command()
-    async def color(self, ctx, *, color: discord.Colour = ""):
+    @meta.command(name="color")
+    async def color_meta(self, ctx, *, color: discord.Colour = ""):
         """Set the meta color tag for the rendered UI from link.
 
         For Discord, this is the colored bar that appears in the left of the embed."""
